@@ -1,0 +1,252 @@
+version: "3.8"
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  api-gateway:
+    build: ./services/api-gateway
+    expose:
+      - "3000"
+    depends_on:
+      - course-service
+      - department-service
+      - enrollment-service
+      - exam-service
+      - notification-service
+      - user-service
+      - tenant-service
+      - kafka
+      - zookeeper
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/debug"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    environment:
+      - JWKS_URL=http://keycloak:8080/realms/mine/protocol/openid-connect/certs
+      - JWT_ISSUER=http://keycloak:8080/realms/mine
+
+  course-service:
+    build: ./services/course-service
+    expose:
+      - "3001"
+    depends_on:
+      - kafka
+      - zookeeper
+      - mongo
+    environment:
+      - JWKS_URL=http://keycloak:8080/realms/mine/protocol/openid-connect/certs
+      - JWT_ISSUER=http://keycloak:8080/realms/mine
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  department-service:
+    build: ./services/department-service
+    expose:
+      - "3002"
+    depends_on:
+      - kafka
+      - zookeeper
+      - mongo
+    environment:
+      - JWKS_URL=http://keycloak:8080/realms/mine/protocol/openid-connect/certs
+      - JWT_ISSUER=http://keycloak:8080/realms/mine
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  enrollment-service:
+    build: ./services/enrollment-service
+    expose:
+      - "3003"
+    depends_on:
+      - kafka
+      - zookeeper
+      - mongo
+    environment:
+      - JWKS_URL=http://keycloak:8080/realms/mine/protocol/openid-connect/certs
+      - JWT_ISSUER=http://keycloak:8080/realms/mine
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  exam-service:
+    build: ./services/exam-service
+    expose:
+      - "3004"
+    depends_on:
+      - kafka
+      - zookeeper
+      - mongo
+    environment:
+      - JWKS_URL=http://keycloak:8080/realms/mine/protocol/openid-connect/certs
+      - JWT_ISSUER=http://keycloak:8080/realms/mine
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  notification-service:
+    build: ./services/notification-service
+    expose:
+      - "3005"
+    depends_on:
+      - kafka
+      - zookeeper
+      - mongo
+    environment:
+      - JWKS_URL=http://keycloak:8080/realms/mine/protocol/openid-connect/certs
+      - JWT_ISSUER=http://keycloak:8080/realms/mine
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  user-service:
+    build: ./services/user-service
+    expose:
+      - "3006"
+    depends_on:
+      - kafka
+      - zookeeper
+      - mongo
+    environment:
+      - JWKS_URL=http://keycloak:8080/realms/mine/protocol/openid-connect/certs
+      - JWT_ISSUER=http://keycloak:8080/realms/mine
+      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=mine
+      - KEYCLOAK_ADMIN_CLIENT_ID=admin-cli
+      - KEYCLOAK_ADMIN_CLIENT_SECRET=
+      - USER_CLIENT_ID=myclient
+      - USER_CLIENT_SECRET=
+      - MONGO_URI=
+
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  tenant-service:
+    build: ./services/tenant-service
+    expose:
+      - "3010"
+    depends_on:
+      - kafka
+      - zookeeper
+      - mongo
+    environment:
+      - JWKS_URL=http://keycloak:8080/realms/mine/protocol/openid-connect/certs
+      - JWT_ISSUER=http://keycloak:8080/realms/mine
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    depends_on:
+      - kafka
+      - zookeeper
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:18.0.0
+    command: ["start-dev"]
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB=postgres
+      - KC_DB_URL_HOST=keycloak-db
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=keycloak
+      - KC_DB_DATABASE=keycloak
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8081/auth/realms/master/.well-known/openid-configuration",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    depends_on:
+      - keycloak-db
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./wait-for-api-gateway.sh:/wait-for-api-gateway.sh:ro
+    depends_on:
+      - api-gateway
+    entrypoint:
+      [
+        "/bin/sh",
+        "/wait-for-api-gateway.sh",
+        "api-gateway",
+        "nginx",
+        "-g",
+        "daemon off;",
+      ]
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: always
+
+  keycloak-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=keycloak
+      - POSTGRES_USER=keycloak
+      - POSTGRES_PASSWORD=keycloak
+    volumes:
+      - keycloak_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+    driver: local
+  keycloak_data:
+    driver: local

@@ -1,0 +1,246 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Enrollment Service API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/enrollments": {
+      "post": {
+        "summary": "Create an enrollment",
+        "tags": [
+          "Enrollments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantIdHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrolledCourse"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Enrollment created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrolledCourse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "List enrollments",
+        "tags": [
+          "Enrollments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantIdHeader"
+          },
+          {
+            "in": "query",
+            "name": "user",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by user id"
+          },
+          {
+            "in": "query",
+            "name": "course",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by course id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of enrollments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EnrolledCourse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enrollments/{id}": {
+      "get": {
+        "summary": "Get an enrollment by ID",
+        "tags": [
+          "Enrollments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantIdHeader"
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Enrollment found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrolledCourse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update an enrollment by ID",
+        "tags": [
+          "Enrollments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantIdHeader"
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrolledCourse"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Enrollment updated"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete an enrollment by ID",
+        "tags": [
+          "Enrollments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TenantIdHeader"
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Enrollment deleted"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "TenantIdHeader": {
+        "name": "x-tenant-id",
+        "in": "header",
+        "required": true,
+        "description": "Tenant ID for multi-tenant DB routing",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "EnrolledCourse": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "string"
+          },
+          "course": {
+            "type": "string"
+          }
+        }
+      },
+      "PaymentInit": {
+        "type": "object",
+        "properties": {
+          "paymentUrl": {
+            "type": "string",
+            "example": "https://chapa.example/pay/abc123"
+          }
+        }
+      },
+      "EnrolledCourseList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/EnrolledCourse"
+        }
+      }
+    }
+  },
+  "tags": []
+}

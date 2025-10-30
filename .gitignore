@@ -1,0 +1,7 @@
+.env
+!.env.example
+node_modules/
+.github/
+.env.template
+.instruction.txt
+.dockerignore
